@@ -1,55 +1,58 @@
 from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from datetime import datetime
-import csv
-import sys
-import os
 import smtplib
 import config
 
 # Craigslist search URL
-BASE_URL = ('http://austin.craigslist.org/search/{0}'
-            '?maxAsk={1}&query={2}&sort=date')
+mycity = 'austin'
+ROOT_URL_CL = 'http://{0}.craigslist.org'.format(mycity)
+BASE_URL = (ROOT_URL_CL + '/search/{0}?maxAsk={1}&query={2}&sort=date')
 
-def parse_results(category, maxprice, search_term):
+
+def parse_results(search_term, maxprice="9999", category="sso"):
     results = []
     search_term = search_term.strip().replace(' ', '+')
     search_url = BASE_URL.format(category, maxprice, search_term)
     soup = BeautifulSoup(urlopen(search_url).read())
     rows = soup.find('div', 'content').find_all('p', 'row')
     for row in rows:
-        url = 'http://chicago.craigslist.org' + row.a['href']
+        url = ROOT_URL_CL + row.a['href']
         # price = row.find('span', 'price').get_text()
         create_date = row.find('span', 'date').get_text()
         title = row.find_all('a')[1].get_text()
         results.append({'url': url, 'create_date': create_date, 'title': title})
     return results
 
-def write_results(results):
-    """Writes list of dictionaries to file."""
-    fields = results[0].keys()
-    with open('results.csv', 'w') as f:
-        dw = csv.DictWriter(f, fieldnames=fields, delimiter='|')
-        dw.writer.writerow(dw.fieldnames)
-        dw.writerows(results)
 
-def has_new_records(results):
-    current_posts = [x['url'] for x in results]
-    fields = results[0].keys()
-    if not os.path.exists('results.csv'):
-        return True
+def convert_CLdatetimetoPythondatetime(date, time):
+# Create datetime object from info extracted in CL post
+# inputs date and time are assumed to be strings
+	datepost = datetime(int(date[:4]), int(date[5:7]), int(date[8:10]), 
+	int(time[:2]), int(time[3:5]), int(time[6:8]))
 
-    with open('results.csv', 'r') as f:
-        reader = csv.DictReader(f, fieldnames=fields, delimiter='|')
-        seen_posts = [row['url'] for row in reader]
+	return datepost
 
-    is_new = False
-    for post in current_posts:
-        if post in seen_posts:
-            pass
-        else:
-            is_new = True
-    return is_new
+
+def get_timeandlocation_posting(post_url):
+# Extract time of posting and location of seller from
+# a complete CL url
+	soup = BeautifulSoup(urlopen(post_url).read())
+
+	rowtime = soup.find('div', 'postinginfos').find('time')
+	date, time = rowtime.get('datetime').split('T')
+	time = time[:8]
+
+	rowmap = soup.find(id='map')
+	try: 
+		longitude = rowmap.get('data-longitude')
+		latitude = rowmap.get('data-latitude')
+	except:
+		longitude = []
+		latitude = []
+
+	return convert_CLdatetimetoPythondatetime(date, time), longitude, latitude
+
 
 def send_text(phone_number, msg):
     fromaddr = "Craigslist Checker"
@@ -61,23 +64,33 @@ def send_text(phone_number, msg):
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
-def get_current_time():
-    return datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
 
 if __name__ == '__main__':
-    try:
-        TERM = sys.argv[1]
-        PHONE_NUMBER = sys.argv[2].strip().replace('-', '')
-    except:
-        print "You need to include a search term and a 10-digit phone number!\n"
-        sys.exit(1)
+	PHONE_NUMBER = '5126959876'
 
-    if len(PHONE_NUMBER) != 10:
-        print "Phone numbers must be 10 digits!\n"
-        sys.exit(1)
+	term = 'fridge | chest freezer'
+	maxprice = '50'
 
-    results = parse_results(TERM)
+	datenow = datetime.now()
+	CLresults = parse_results(term, maxprice)
     
+	new_posts = []
+	new_posts_counter = 0
+	for myresult in CLresults:
+		print myresult
+		post_url = myresult['url']
+
+		datepost, longitude, latitude = get_timeandlocation_posting(post_url)
+		print datepost, longitude, latitude
+		datediff = datenow - datepost
+		if datediff.total_seconds()/60. > 3600.:	break
+
+		new_posts.append(post_url)
+		new_posts_counter += 1
+		
+	print new_posts, new_posts_counter
+
+"""
     # Send the SMS message if there are new results
     if has_new_records(results):
         message = "Hey - there are new Craigslist posts for: {0}".format(TERM.strip())
@@ -86,3 +99,4 @@ if __name__ == '__main__':
         write_results(results)
     else:
         print "[{0}] No new results - will try again later".format(get_current_time())
+"""
