@@ -8,13 +8,13 @@ import smtplib
 import config
 
 # Craigslist search URL
-BASE_URL = ('http://chicago.craigslist.org/search/'
-            '?sort=rel&areaID=11&subAreaID=&query={0}&catAbb=sss')
+BASE_URL = ('http://austin.craigslist.org/search/{0}'
+            '?maxAsk={1}&query={2}&sort=date')
 
-def parse_results(search_term):
+def parse_results(category, maxprice, search_term):
     results = []
     search_term = search_term.strip().replace(' ', '+')
-    search_url = BASE_URL.format(search_term)
+    search_url = BASE_URL.format(category, maxprice, search_term)
     soup = BeautifulSoup(urlopen(search_url).read())
     rows = soup.find('div', 'content').find_all('p', 'row')
     for row in rows:
