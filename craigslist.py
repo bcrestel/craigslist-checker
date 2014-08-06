@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from datetime import datetime
+import sys
 import smtplib
 import myconfig_gmail
 
@@ -96,18 +97,29 @@ def send_email(myemail, term, maxprice, CL_posts):
 
 
 if __name__ == '__main__':
-	PHONE_NUMBER = '5126959876'
-	EMAIL_ADDRESS = 'crestel@ices.utexas.edu'
+	try:
+		term = sys.argv[1]
+		PHONE_NUMBER = sys.argv[2].strip().replace('-', '')
+		EMAIL_ADDRESS = sys.argv[3]
+	except:
+		print 'Usage: {0} <search_term> <phone_nb> <email_add> (<max_price>)'.format(sys.argv[0])
+		sys.exit(1)
 
-	term = 'fridge | chest freezer'
-	maxprice = '50'
+	try:
+		maxprice = sys.argv[4]
+		CLresults = parse_results(term, maxprice)
+	except:
+		maxprice = 'N/A'
+		CLresults = parse_results(term)
+	
+	print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice
 
-	CLresults = parse_results(term, maxprice)
-	lastcheck_file = 'lastcheck.dat'
+	lastcheck_file = 'lastcheck-{0}.dat'.format(term.replace('|','').replace(' ',''))
     
 	new_posts = []
 	new_posts_counter = 0
 	lastcheck = read_datetimefile(lastcheck_file)
+	len(CLresults)
 	for myresult in CLresults:
 		#print myresult
 		post_url = myresult['url']
@@ -120,10 +132,10 @@ if __name__ == '__main__':
 		new_posts.append(post_url)
 		new_posts_counter += 1
 		
-	print new_posts, new_posts_counter
+	#print new_posts, new_posts_counter
 
 	# Update time of lastcheck
-	#print_datetime(datetime.now(), lastcheck_file) 
+	print_datetime(datetime.now(), lastcheck_file) 
 
 	# Send information if new items found
 	if new_posts_counter > 0:
