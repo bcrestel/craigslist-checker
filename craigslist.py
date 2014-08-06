@@ -4,7 +4,8 @@ from datetime import datetime
 import numpy as np
 import sys
 import smtplib
-import myconfig_gmail
+import myconfig_gmail		# store gmail account credentials
+import myposition			# store GPS coordinates
 
 # Craigslist search URL
 mycity = 'austin'
@@ -82,11 +83,12 @@ def distance_longlat(coord1, coord2):
 		D1 = (coord1[0] - coord2[0])*np.pi/180.
 		D2 = (coord1[1] - coord2[1])*np.pi/180.
 	except:
-		print 'Usage: coordinates must have 2 entries for '
+		print 'Usage: coordinates must have 2 entries for ' \
 		'latitude and longitude.'
 		sys.exit(1)
 
-	return EARTH_RADIUS*np.sqrt(D1**2 + D2**2)
+	mydist = EARTH_RADIUS*np.sqrt(D1**2 + D2**2)
+	return mydist
 
 
 def send_text(phone_number, term):
@@ -119,7 +121,7 @@ if __name__ == '__main__':
 		PHONE_NUMBER = sys.argv[2].strip().replace('-', '')
 		EMAIL_ADDRESS = sys.argv[3]
 	except:
-		print 'Usage: {0} <search_term> <phone_nb> <email_add> (<max_price>)'.format(sys.argv[0])
+		print 'Usage: {0} <search_term> <phone_nb> <email_add> (<max_price>) (<max_dist>)'.format(sys.argv[0])
 		sys.exit(1)
 
 	try:
@@ -128,8 +130,14 @@ if __name__ == '__main__':
 	except:
 		maxprice = 'N/A'
 		CLresults = parse_results(term)
+
+	mycoord = myposition.longlatcoord
+	try:
+		maxdist = float(sys.argv[5])
+	except:
+		maxdist = []
 	
-	#print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice
+	#print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice, maxdist
 
 	lastcheck_file = 'lastcheck-{0}.dat'.format(term.replace('|','').replace(' ',''))
     
@@ -146,8 +154,10 @@ if __name__ == '__main__':
 		datediff = datepost - lastcheck
 		if datediff.total_seconds() < 0.:	break
 
-		new_posts.append(post_url)
-		new_posts_counter += 1
+		if maxdist == [] or longitude == [] or \
+		distance_longlat(mycoord, (float(latitude), float(longitude))) < maxdist:
+			new_posts.append(post_url)
+			new_posts_counter += 1
 		
 	#print new_posts, new_posts_counter
 
