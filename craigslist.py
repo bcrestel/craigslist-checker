@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from datetime import datetime
 import smtplib
-import config
+import myconfig_gmail
 
 # Craigslist search URL
 mycity = 'austin'
@@ -39,7 +39,8 @@ def get_timeandlocation_posting(post_url):
 # a complete CL url
 	soup = BeautifulSoup(urlopen(post_url).read())
 
-	rowtime = soup.find('div', 'postinginfos').find('time')
+	myrowtime = soup.find('div', 'postinginfos').findAll('time')
+	rowtime = myrowtime[-1]
 	date, time = rowtime.get('datetime').split('T')
 	time = time[:8]
 
@@ -54,49 +55,77 @@ def get_timeandlocation_posting(post_url):
 	return convert_CLdatetimetoPythondatetime(date, time), longitude, latitude
 
 
-def send_text(phone_number, msg):
-    fromaddr = "Craigslist Checker"
+def print_datetime(mydatetime, filename):
+	myfile = open(filename, 'w')
+
+	myfile.write('{0} {1} {2} {3} {4} {5} {6}'.format(
+	mydatetime.year, mydatetime.month, mydatetime.day, mydatetime.hour,
+	mydatetime.minute, mydatetime.second, mydatetime.microsecond))
+
+
+def read_datetimefile(filename):
+	myfile = open(filename, 'r')
+	mydatetime = myfile.readline().split()
+
+	return datetime(int(mydatetime[0]), int(mydatetime[1]), int(mydatetime[2]),
+	int(mydatetime[3]), int(mydatetime[4]), int(mydatetime[5]), int(mydatetime[6]))
+
+
+def send_text(phone_number, term):
+    fromaddr = "Python Bot (Ben)"
     toaddrs = phone_number + "@txt.att.net"
-    msg = ("From: {0}\r\nTo: {1}\r\n\r\n{2}").format(fromaddr, toaddrs, msg)
+    msg = ('New items were found in category {0}.\nPlease check your email.'.format(term))
     server = smtplib.SMTP('smtp.gmail.com:587')
     server.starttls()
-    server.login(config.email['username'], config.email['password'])
+    server.login(myconfig_gmail.email['username'], myconfig_gmail.email['password'])
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
 
+def send_email(myemail, term, maxprice, CL_posts):
+	fromaddr = "Python Bot (Ben)"
+	msg = 'Recents results on CL\n'
+	msg = msg + 'Below are new results for term {0} with maxprix {1}.\n'.format(term, maxprice)
+	for myline in CL_posts:
+		msg = msg + myline + '\n'
+	server = smtplib.SMTP('smtp.gmail.com:587')
+	server.starttls()
+	server.login(myconfig_gmail.email['username'], myconfig_gmail.email['password'])
+	server.sendmail(fromaddr, myemail, msg)
+	server.quit()
+
+
 if __name__ == '__main__':
 	PHONE_NUMBER = '5126959876'
+	EMAIL_ADDRESS = 'crestel@ices.utexas.edu'
 
 	term = 'fridge | chest freezer'
 	maxprice = '50'
 
-	datenow = datetime.now()
 	CLresults = parse_results(term, maxprice)
+	lastcheck_file = 'lastcheck.dat'
     
 	new_posts = []
 	new_posts_counter = 0
+	lastcheck = read_datetimefile(lastcheck_file)
 	for myresult in CLresults:
-		print myresult
+		#print myresult
 		post_url = myresult['url']
 
 		datepost, longitude, latitude = get_timeandlocation_posting(post_url)
-		print datepost, longitude, latitude
-		datediff = datenow - datepost
-		if datediff.total_seconds()/60. > 3600.:	break
+		#print datepost, longitude, latitude
+		datediff = datepost - lastcheck
+		if datediff.total_seconds() < 0.:	break
 
 		new_posts.append(post_url)
 		new_posts_counter += 1
 		
 	print new_posts, new_posts_counter
 
-"""
-    # Send the SMS message if there are new results
-    if has_new_records(results):
-        message = "Hey - there are new Craigslist posts for: {0}".format(TERM.strip())
-        print "[{0}] There are new results - sending text message to {0}".format(get_current_time(), PHONE_NUMBER)
-        send_text(PHONE_NUMBER, message)
-        write_results(results)
-    else:
-        print "[{0}] No new results - will try again later".format(get_current_time())
-"""
+	# Update time of lastcheck
+	print_datetime(datetime.now(), lastcheck_file) 
+
+	# Send information if new items found
+	if new_posts_counter > 0:
+		send_text(PHONE_NUMBER, term)
+		send_email(EMAIL_ADDRESS, term, maxprice, new_posts)
