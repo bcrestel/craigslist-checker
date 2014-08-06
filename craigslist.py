@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from datetime import datetime
+import numpy as np
 import sys
 import smtplib
 import myconfig_gmail
@@ -70,6 +71,22 @@ def read_datetimefile(filename):
 
 	return datetime(int(mydatetime[0]), int(mydatetime[1]), int(mydatetime[2]),
 	int(mydatetime[3]), int(mydatetime[4]), int(mydatetime[5]), int(mydatetime[6]))
+
+
+EARTH_RADIUS = 6371.	# this is expressed in kilometers
+def distance_longlat(coord1, coord2):
+# Compute distance (in km) between 2 points
+# where coordinates are given in (latitude, longitude)
+# and both are expressed in degrees (e.g (30.12312, -97.12312))
+	try:
+		D1 = (coord1[0] - coord2[0])*np.pi/180.
+		D2 = (coord1[1] - coord2[1])*np.pi/180.
+	except:
+		print 'Usage: coordinates must have 2 entries for '
+		'latitude and longitude.'
+		sys.exit(1)
+
+	return EARTH_RADIUS*np.sqrt(D1**2 + D2**2)
 
 
 def send_text(phone_number, term):
