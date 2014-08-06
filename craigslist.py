@@ -112,7 +112,7 @@ if __name__ == '__main__':
 		maxprice = 'N/A'
 		CLresults = parse_results(term)
 	
-	print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice
+	#print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice
 
 	lastcheck_file = 'lastcheck-{0}.dat'.format(term.replace('|','').replace(' ',''))
     
