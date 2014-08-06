@@ -76,7 +76,7 @@ def send_text(phone_number, term):
     toaddrs = phone_number + "@txt.att.net"
     msg = ('New items were found in category {0}.\nPlease check your email.'.format(term))
     server = smtplib.SMTP('smtp.gmail.com:587')
-    server.starttls()
+    server.starttls()	# used for encryption
     server.login(myconfig_gmail.email['username'], myconfig_gmail.email['password'])
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
@@ -84,12 +84,12 @@ def send_text(phone_number, term):
 
 def send_email(myemail, term, maxprice, CL_posts):
 	fromaddr = "Python Bot (Ben)"
-	msg = 'Recents results on CL\n'
-	msg = msg + 'Below are new results for term {0} with maxprix {1}.\n'.format(term, maxprice)
+	msg = 'Subject: New CL results in "{0}"\n'.format(term)
+	msg = msg + 'Below are new results in "{0}" with maximum price of {1}$:\n\n'.format(term, maxprice)
 	for myline in CL_posts:
 		msg = msg + myline + '\n'
 	server = smtplib.SMTP('smtp.gmail.com:587')
-	server.starttls()
+	server.starttls()	# used for encryption
 	server.login(myconfig_gmail.email['username'], myconfig_gmail.email['password'])
 	server.sendmail(fromaddr, myemail, msg)
 	server.quit()
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 	print new_posts, new_posts_counter
 
 	# Update time of lastcheck
-	print_datetime(datetime.now(), lastcheck_file) 
+	#print_datetime(datetime.now(), lastcheck_file) 
 
 	# Send information if new items found
 	if new_posts_counter > 0:
