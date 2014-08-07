@@ -169,6 +169,7 @@ if __name__ == '__main__':
 	print_datetime(datetime.now(), flog) 
 	for myline in new_posts:	
 		flog.write(myline + '\n')
+	flog.write('\n')
 	flog.close()
 
 	# Send information if new items found
