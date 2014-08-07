@@ -58,10 +58,8 @@ def get_timeandlocation_posting(post_url):
 	return convert_CLdatetimetoPythondatetime(date, time), longitude, latitude
 
 
-def print_datetime(mydatetime, filename):
-	myfile = open(filename, 'w')
-
-	myfile.write('{0} {1} {2} {3} {4} {5} {6}'.format(
+def print_datetime(mydatetime, myfile):
+	myfile.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(
 	mydatetime.year, mydatetime.month, mydatetime.day, mydatetime.hour,
 	mydatetime.minute, mydatetime.second, mydatetime.microsecond))
 
@@ -140,6 +138,7 @@ if __name__ == '__main__':
 	#print term, PHONE_NUMBER, EMAIL_ADDRESS, maxprice, maxdist
 
 	lastcheck_file = 'lastcheck-{0}.dat'.format(term.replace('|','').replace(' ',''))
+	logfile = '{0}.log'.format(term.replace('|','').replace(' ',''))
     
 	new_posts = []
 	new_posts_counter = 0
@@ -162,7 +161,15 @@ if __name__ == '__main__':
 	#print new_posts, new_posts_counter
 
 	# Update time of lastcheck
-	print_datetime(datetime.now(), lastcheck_file) 
+	fchk = open(lastcheck_file, 'w')
+	print_datetime(datetime.now(), fchk) 
+	fchk.close()
+
+	flog = open(logfile, 'a')
+	print_datetime(datetime.now(), flog) 
+	for myline in new_posts:	
+		flog.write(myline + '\n')
+	flog.close()
 
 	# Send information if new items found
 	if new_posts_counter > 0:
