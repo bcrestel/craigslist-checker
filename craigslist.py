@@ -128,6 +128,7 @@ if __name__ == '__main__':
 	except:
 		maxprice = 'N/A'
 		CLresults = parse_results(term)
+	datetime_newsearch = datetime.now()
 
 	mycoord = myposition.longlatcoord
 	try:
@@ -162,7 +163,7 @@ if __name__ == '__main__':
 
 	# Update time of lastcheck
 	fchk = open(lastcheck_file, 'w')
-	print_datetime(datetime.now(), fchk) 
+	print_datetime(datetime_newsearch, fchk) 
 	fchk.close()
 
 	flog = open(logfile, 'a')
@@ -174,5 +175,5 @@ if __name__ == '__main__':
 
 	# Send information if new items found
 	if new_posts_counter > 0:
-		send_text(PHONE_NUMBER, term)
+		#send_text(PHONE_NUMBER, term)
 		send_email(EMAIL_ADDRESS, term, maxprice, new_posts)
